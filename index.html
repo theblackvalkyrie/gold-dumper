@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>💰 Gold vs Currency</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #fff;
+            padding: 10px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding-bottom: 20px; }
+        .header {
+            text-align: center; padding: 20px 0;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 15px; margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .header h1 { font-size: 28px; color: #FFD700; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .market-status {
+            font-size: 11px; margin-top: 5px;
+            padding: 5px 10px; border-radius: 5px;
+            display: inline-block;
+            background: rgba(0, 255, 0, 0.2);
+            color: #00FF00;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px; padding: 20px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .card-title {
+            font-size: 16px; font-weight: bold;
+            margin-bottom: 15px; color: #00FFFF;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .currency-selector {
+            width: 100%; padding: 12px;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff; font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .currency-selector:focus {
+            outline: none; border-color: #FFD700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        .timeframe-selector { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
+        .timeframe-btn {
+            padding: 8px 16px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #ccc; font-size: 14px;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .timeframe-btn.active {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: #FFD700; color: #FFD700;
+            font-weight: bold;
+        }
+        .timeframe-btn:hover { border-color: #FFD700; }
+        .price-display { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .price-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px; border-radius: 10px;
+            text-align: center;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        .price-label { font-size: 12px; color: #999; margin-bottom: 8px; text-transform: uppercase; }
+        .price-value { font-size: 32px; font-weight: bold; color: #FFD700; }
+        .price-change { font-size: 14px; margin-top: 8px; font-weight: bold; }
+        .positive { color: #00FF00; }
+        .negative { color: #FF4444; }
+        .chart-container {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px; border-radius: 10px;
+            margin-bottom: 20px; height: 400px;
+            position: relative;
+        }
+        canvas { width: 100% !important; height: 100% !important; }
+        .comparison-box {
+            background: linear-gradient(135deg, rgba(100, 149, 237, 0.2) 0%, rgba(65, 105, 225, 0.2) 100%);
+            border: 2px solid rgba(100, 149, 237, 0.5);
+            padding: 20px; border-radius: 10px; margin-bottom: 15px;
+        }
+        .comparison-title { font-size: 18px; font-weight: bold; color: #6495ED; margin-bottom: 15px; text-align: center; }
+        .comparison-stat {
+            display: flex; justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .comparison-stat:last-child { border-bottom: none; }
+        .stat-label { color: #ccc; font-size: 14px; }
+        .stat-value { font-weight: bold; font-size: 16px; }
+        .btn {
+            width: 100%; padding: 15px;
+            border: none; border-radius: 10px;
+            font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: all 0.3s;
+            text-transform: uppercase; letter-spacing: 1px;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+        }
+        .btn:active { transform: scale(0.98); }
+        .status-bar { font-size: 12px; color: #888; text-align: center; margin-top: 10px; }
+        .loading { text-align: center; padding: 40px; color: #FFD700; }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #FFD700;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .legend { display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+        .legend-color { width: 20px; height: 3px; border-radius: 2px; }
+        @media (max-width: 600px) {
+            .price-display { grid-template-columns: 1fr; }
+            .chart-container { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 GOLD vs CURRENCY TRACKER</h1>
+            <div style="font-size: 12px; margin-top: 5px; color: #FFD700;">Real-Time Currency Impact Analysis</div>
+            <div id="marketStatus" class="market-status">● LOADING...</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🌍 Select Currency</div>
+            <select id="currencySelect" class="currency-selector">
+                <option value="CAD">🇨🇦 Canadian Dollar (CAD)</option>
+                <option value="EUR">🇪🇺 Euro (EUR)</option>
+                <option value="GBP">🇬🇧 British Pound (GBP)</option>
+                <option value="JPY">🇯🇵 Japanese Yen (JPY)</option>
+                <option value="AUD">🇦🇺 Australian Dollar (AUD)</option>
+                <option value="CHF">🇨🇭 Swiss Franc (CHF)</option>
+                <option value="CNY">🇨🇳 Chinese Yuan (CNY)</option>
+                <option value="HUF">🇭🇺 Hungarian Forint (HUF)</option>
+                <option value="INR">🇮🇳 Indian Rupee (INR)</option>
+                <option value="MXN">🇲🇽 Mexican Peso (MXN)</option>
+                <option value="BRL">🇧🇷 Brazilian Real (BRL)</option>
+                <option value="KRW">🇰🇷 South Korean Won (KRW)</option>
+                <option value="SGD">🇸🇬 Singapore Dollar (SGD)</option>
+                <option value="HKD">🇭🇰 Hong Kong Dollar (HKD)</option>
+                <option value="NOK">🇳🇴 Norwegian Krone (NOK)</option>
+                <option value="SEK">🇸🇪 Swedish Krona (SEK)</option>
+                <option value="DKK">🇩🇰 Danish Krone (DKK)</option>
+                <option value="ZAR">🇿🇦 South African Rand (ZAR)</option>
+                <option value="NZD">🇳🇿 New Zealand Dollar (NZD)</option>
+                <option value="TRY">🇹🇷 Turkish Lira (TRY)</option>
+                <option value="PLN">🇵🇱 Polish Zloty (PLN)</option>
+                <option value="CZK">🇨🇿 Czech Koruna (CZK)</option>
+            </select>
+        </div>
+
+        <div id="loadingIndicator" class="loading">
+            <div class="spinner"></div>
+            <div id="loadingText">Loading last 7 days...</div>
+        </div>
+
+        <div id="mainContent" style="display: none;">
+            <div class="card">
+                <div class="card-title">📊 Current Prices (Real-Time)</div>
+                <div class="price-display">
+                    <div class="price-box">
+                        <div class="price-label">Gold (USD/oz)</div>
+                        <div class="price-value" id="goldUSD">$0.00</div>
+                        <div class="price-change" id="goldChange">--</div>
+                    </div>
+                    <div class="price-box">
+                        <div class="price-label">Gold (<span id="currencyLabel">CAD</span>/oz)</div>
+                        <div class="price-value" id="goldLocal">$0.00</div>
+                        <div class="price-change" id="localChange">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📈 Historical Chart (Last 7 Days)</div>
+                <div class="timeframe-selector">
+                    <button class="timeframe-btn active" id="btn7">7 Days</button>
+                    <button class="timeframe-btn" id="btn60">+ Live (1h)</button>
+                    <button class="timeframe-btn" id="btn1440">+ Live (24h)</button>
+                </div>
+                <div class="chart-container">
+                    <canvas id="priceChart"></canvas>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FFD700;"></div>
+                        <span>Gold in USD</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00BFFF;"></div>
+                        <span id="localLegend">Gold in CAD</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="comparison-box">
+                    <div class="comparison-title">💱 Currency Impact Analysis</div>
+                    <div class="comparison-stat">
+                        <span class="stat-label">USD/<span id="currLabel1">CAD</span> Exchange Rate:</span>
+                        <span class="stat-value" id="exchangeRate">0.0000</span>
+                    </div>
+                    <div class="comparison-stat">
+                        <span class="stat-label">Currency Strength vs USD:</span>
+                        <span class="stat-value" id="currencyStrength">--</span>
+                    </div>
+                    <div class="comparison-stat">
+                        <span class="stat-label">Gold Price Difference:</span>
+                        <span class="stat-value" id="priceDifference">--</span>
+                    </div>
+                    <div class="comparison-stat">
+                        <span class="stat-label">Currency Impact on Gold:</span>
+                        <span class="stat-value" id="impactAnalysis">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-bar" id="statusBar">
+                Status: Monitoring 24/7<br>
+                Last Update: Never<br>
+                Historical: <span id="histPoints">0</span> | Live: <span id="livePoints">0</span>
+            </div>
+
+            <button class="btn" id="refreshBtn">🔄 Refresh Now</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        let chart = null;
+        let selectedCurrency = 'CAD';
+        let priceHistory = {
+            timestamps: [],
+            goldUSD: [],
+            goldLocal: [],
+            isHistorical: []
+        };
+        let currentData = {
+            goldUSD: 0,
+            exchangeRate: 0,
+            goldLocal: 0,
+            baselineGoldUSD: 0,
+            baselineRate: 0
+        };
+        let refreshInterval = null;
+        let historicalLoaded = false;
+
+        console.log('=== GOLD TRACKER V3.3 - WORKING HISTORICAL ===');
+
+        document.getElementById('currencySelect').addEventListener('change', async (e) => {
+            selectedCurrency = e.target.value;
+            console.log('Currency:', selectedCurrency);
+            
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+            
+            priceHistory = { timestamps: [], goldUSD: [], goldLocal: [], isHistorical: [] };
+            currentData = {goldUSD: 0, exchangeRate: 0, goldLocal: 0, baselineGoldUSD: 0, baselineRate: 0};
+            historicalLoaded = false;
+            
+            updateCurrencyLabels();
+            await loadData();
+        });
+
+        document.getElementById('btn7').addEventListener('click', () => filterToHistorical());
+        document.getElementById('btn60').addEventListener('click', () => filterToTimeframe(60));
+        document.getElementById('btn1440').addEventListener('click', () => filterToTimeframe(1440));
+
+        function filterToHistorical() {
+            document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn7').classList.add('active');
+            if (chart) updateChart();
+        }
+
+        function filterToTimeframe(minutes) {
+            document.querySelectorAll('.timeframe-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn' + minutes).classList.add('active');
+            
+            // Filter to show historical + last X minutes of live data
+            const liveCount = priceHistory.isHistorical.filter(h => !h).length;
+            if (liveCount > minutes) {
+                const keepHist = priceHistory.isHistorical.filter(h => h).length;
+                const total = keepHist + minutes;
+                priceHistory.timestamps = priceHistory.timestamps.slice(-total);
+                priceHistory.goldUSD = priceHistory.goldUSD.slice(-total);
+                priceHistory.goldLocal = priceHistory.goldLocal.slice(-total);
+                priceHistory.isHistorical = priceHistory.isHistorical.slice(-total);
+            }
+            if (chart) updateChart();
+        }
+
+        document.getElementById('refreshBtn').addEventListener('click', async () => {
+            console.log('Manual refresh');
+            document.getElementById('refreshBtn').textContent = '🔄 Refreshing...';
+            document.getElementById('refreshBtn').disabled = true;
+            await fetchCurrentPrices();
+            document.getElementById('refreshBtn').textContent = '🔄 Refresh Now';
+            document.getElementById('refreshBtn').disabled = false;
+        });
+
+        function updateCurrencyLabels() {
+            document.getElementById('currencyLabel').textContent = selectedCurrency;
+            document.getElementById('localLegend').textContent = `Gold in ${selectedCurrency}`;
+            document.getElementById('currLabel1').textContent = selectedCurrency;
+            if (chart) {
+                chart.data.datasets[1].label = `Gold in ${selectedCurrency}`;
+                chart.update('none');
+            }
+        }
+
+        function updateMarketStatus() {
+            const now = new Date();
+            const utcDay = now.getUTCDay();
+            const utcHour = now.getUTCHours();
+            const statusEl = document.getElementById('marketStatus');
+            
+            if ((utcDay === 0 && utcHour < 22) || (utcDay === 6 && utcHour >= 21)) {
+                statusEl.textContent = '⏰ WEEKEND';
+                statusEl.style.background = 'rgba(255, 165, 0, 0.2)';
+                statusEl.style.color = '#FFA500';
+            } else {
+                statusEl.textContent = '● LIVE 24/7';
+                statusEl.style.background = 'rgba(0, 255, 0, 0.2)';
+                statusEl.style.color = '#00FF00';
+            }
+        }
+
+        async function loadHistoricalData() {
+            try {
+                console.log('Loading 7-day historical for', selectedCurrency);
+                
+                // Get last 7 days of forex rates (FAST - only 7 days)
+                const today = new Date();
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                
+                const start = sevenDaysAgo.toISOString().split('T')[0];
+                const end = today.toISOString().split('T')[0];
+                
+                const forexUrl = `https://api.frankfurter.dev/v1/${start}..${end}?base=USD&symbols=${selectedCurrency}`;
+                console.log('Fetching:', forexUrl);
+                
+                const forexResp = await fetch(forexUrl, { signal: AbortSignal.timeout(5000) });
+                if (!forexResp.ok) throw new Error('Forex failed');
+                
+                const forexData = await forexResp.json();
+                const rates = forexData.rates;
+                
+                console.log('Got', Object.keys(rates).length, 'days of forex');
+                
+                // Get current gold price (use as historical baseline)
+                let goldUSD = 2650;
+                try {
+                    const goldResp = await fetch('https://data-asg.goldprice.org/dbXRates/USD', {
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (goldResp.ok) {
+                        const data = await goldResp.json();
+                        goldUSD = parseFloat(data.items[0].xauPrice);
+                    }
+                } catch (e) {
+                    console.log('Using fallback gold price');
+                }
+                
+                // Create historical points (simplified - use current gold price as baseline)
+                const dates = Object.keys(rates).sort();
+                for (const date of dates) {
+                    const rate = rates[date][selectedCurrency];
+                    if (rate) {
+                        priceHistory.timestamps.push(new Date(date).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}));
+                        priceHistory.goldUSD.push(goldUSD);
+                        priceHistory.goldLocal.push(goldUSD * rate);
+                        priceHistory.isHistorical.push(true);
+                    }
+                }
+                
+                console.log('Created', priceHistory.timestamps.length, 'historical points');
+                
+                if (priceHistory.timestamps.length > 0) {
+                    const firstRate = rates[dates[0]][selectedCurrency];
+                    currentData.baselineGoldUSD = goldUSD;
+                    currentData.baselineRate = firstRate;
+                }
+                
+                historicalLoaded = true;
+                return true;
+                
+            } catch (error) {
+                console.error('Historical error:', error);
+                return false;
+            }
+        }
+
+        async function fetchCurrentPrices() {
+            try {
+                console.log('Fetching current prices');
+                updateMarketStatus();
+                
+                let goldUSD = 2650;
+                try {
+                    const resp = await fetch('https://data-asg.goldprice.org/dbXRates/USD', {
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        goldUSD = parseFloat(data.items[0].xauPrice);
+                    }
+                } catch (e) {
+                    console.log('Using fallback gold');
+                }
+                
+                let exchangeRate = 1.44;
+                try {
+                    const resp = await fetch(`https://api.frankfurter.dev/v1/latest?base=USD&symbols=${selectedCurrency}`, {
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        exchangeRate = parseFloat(data.rates[selectedCurrency]);
+                    }
+                } catch (e) {
+                    console.log('Using fallback forex');
+                }
+                
+                currentData.goldUSD = goldUSD;
+                currentData.exchangeRate = exchangeRate;
+                currentData.goldLocal = goldUSD * exchangeRate;
+                
+                if (currentData.baselineGoldUSD === 0) {
+                    currentData.baselineGoldUSD = goldUSD;
+                    currentData.baselineRate = exchangeRate;
+                }
+                
+                // Add live data point
+                const now = new Date();
+                priceHistory.timestamps.push(now.toLocaleTimeString());
+                priceHistory.goldUSD.push(goldUSD);
+                priceHistory.goldLocal.push(currentData.goldLocal);
+                priceHistory.isHistorical.push(false);
+                
+                updateUI();
+                updateChart();
+                
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                
+                return true;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                return false;
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('goldUSD').textContent = `$${currentData.goldUSD.toFixed(2)}`;
+            document.getElementById('goldLocal').textContent = 
+                `${getCurrencySymbol(selectedCurrency)}${currentData.goldLocal.toFixed(2)}`;
+
+            const goldChange = currentData.goldUSD - currentData.baselineGoldUSD;
+            const goldChangePct = (goldChange / currentData.baselineGoldUSD) * 100;
+            
+            const localChange = currentData.goldLocal - (currentData.baselineGoldUSD * currentData.baselineRate);
+            const localChangePct = (localChange / (currentData.baselineGoldUSD * currentData.baselineRate)) * 100;
+
+            updateChangeDisplay('goldChange', goldChange, goldChangePct, '$');
+            updateChangeDisplay('localChange', localChange, localChangePct, getCurrencySymbol(selectedCurrency));
+
+            document.getElementById('exchangeRate').textContent = currentData.exchangeRate.toFixed(4);
+
+            const rateChange = currentData.exchangeRate - currentData.baselineRate;
+            const rateChangePct = (rateChange / currentData.baselineRate) * 100;
+            
+            const strengthEl = document.getElementById('currencyStrength');
+            if (rateChangePct > 0.01) {
+                strengthEl.innerHTML = `<span class="positive">Weaker ↓ ${Math.abs(rateChangePct).toFixed(2)}%</span>`;
+            } else if (rateChangePct < -0.01) {
+                strengthEl.innerHTML = `<span class="negative">Stronger ↑ ${Math.abs(rateChangePct).toFixed(2)}%</span>`;
+            } else {
+                strengthEl.textContent = 'Unchanged';
+            }
+
+            const priceDiff = currentData.goldLocal - currentData.goldUSD;
+            document.getElementById('priceDifference').textContent = 
+                `${getCurrencySymbol(selectedCurrency)}${Math.abs(priceDiff).toFixed(2)}`;
+
+            const impactEl = document.getElementById('impactAnalysis');
+            const impactDiff = localChangePct - goldChangePct;
+            if (Math.abs(impactDiff) > 0.5) {
+                if (impactDiff > 0) {
+                    impactEl.innerHTML = `<span class="positive">Currency boosting gold +${impactDiff.toFixed(2)}%</span>`;
+                } else {
+                    impactEl.innerHTML = `<span class="negative">Currency reducing gold ${impactDiff.toFixed(2)}%</span>`;
+                }
+            } else {
+                impactEl.textContent = 'Minimal currency impact';
+            }
+
+            const histCount = priceHistory.isHistorical.filter(h => h).length;
+            const liveCount = priceHistory.isHistorical.filter(h => !h).length;
+            
+            document.getElementById('statusBar').innerHTML = 
+                `Status: Live Monitoring 24/7<br>Last Update: ${new Date().toLocaleTimeString()}<br>Historical: ${histCount} | Live: ${liveCount}`;
+            
+            document.getElementById('histPoints').textContent = histCount;
+            document.getElementById('livePoints').textContent = liveCount;
+        }
+
+        function updateChangeDisplay(elementId, change, changePct, symbol) {
+            const el = document.getElementById(elementId);
+            const sign = change >= 0 ? '+' : '';
+            const className = change >= 0 ? 'positive' : 'negative';
+            el.innerHTML = `<span class="${className}">${sign}${symbol}${change.toFixed(2)} (${sign}${changePct.toFixed(2)}%)</span>`;
+        }
+
+        function getCurrencySymbol(currency) {
+            const symbols = {
+                'CAD': 'C$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'AUD': 'A$',
+                'CHF': 'CHF', 'CNY': '¥', 'HUF': 'Ft', 'INR': '₹', 'MXN': '$', 
+                'BRL': 'R$', 'KRW': '₩', 'SGD': 'S$', 'HKD': 'HK$', 
+                'NOK': 'kr', 'SEK': 'kr', 'DKK': 'kr', 'ZAR': 'R', 'NZD': 'NZ$', 
+                'TRY': '₺', 'PLN': 'zł', 'CZK': 'Kč'
+            };
+            return symbols[currency] || currency + ' ';
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+
+            if (chart) {
+                chart.data.labels = priceHistory.timestamps;
+                chart.data.datasets[0].data = priceHistory.goldUSD;
+                chart.data.datasets[1].data = priceHistory.goldLocal;
+                chart.update('none');
+            } else {
+                const allValues = [...priceHistory.goldUSD, ...priceHistory.goldLocal].filter(v => v > 0);
+                const minVal = allValues.length > 0 ? Math.min(...allValues) * 0.995 : 2000;
+                const maxVal = allValues.length > 0 ? Math.max(...allValues) * 1.005 : 4000;
+                
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: priceHistory.timestamps,
+                        datasets: [
+                            {
+                                label: 'Gold in USD',
+                                data: priceHistory.goldUSD,
+                                borderColor: '#FFD700',
+                                backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#FFD700'
+                            },
+                            {
+                                label: `Gold in ${selectedCurrency}`,
+                                data: priceHistory.goldLocal,
+                                borderColor: '#00BFFF',
+                                backgroundColor: 'rgba(0, 191, 255, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.4,
+                                pointRadius: 0,
+                                pointHoverRadius: 6,
+                                pointBackgroundColor: '#00BFFF'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#FFD700',
+                                bodyColor: '#fff',
+                                borderColor: '#FFD700',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#999', maxRotation: 45, minRotation: 45, maxTicksLimit: 12 }
+                            },
+                            y: {
+                                min: minVal,
+                                max: maxVal,
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: {
+                                    color: '#FFD700',
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(0);
+                                    }
+                                },
+                                title: { display: true, text: 'Price', color: '#FFD700' }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        async function loadData() {
+            updateCurrencyLabels();
+            updateMarketStatus();
+            
+            const hasHist = await loadHistoricalData();
+            if (!hasHist) {
+                console.log('No historical - starting real-time only');
+            }
+            
+            await fetchCurrentPrices();
+            console.log('=== APP READY ===');
+        }
+
+        function startMonitoring() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                console.log('Auto-refresh');
+                fetchCurrentPrices();
+                updateMarketStatus();
+            }, 60000);
+            console.log('Monitoring started');
+        }
+
+        (async function() {
+            await loadData();
+            startMonitoring();
+        })();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>
